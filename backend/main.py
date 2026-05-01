@@ -156,13 +156,21 @@ def execute_pipeline(nodes, edges):
             node_outputs[node_id] = f"Timer: {data.get('interval', 5)} {data.get('unit', 'seconds')}"
             
         elif node_type == 'api':
-            import httpx
+            import httpx, json
             try:
                 url = data.get('url', '')
                 method = data.get('method', 'GET')
                 if url:
                     r = httpx.request(method, url, timeout=10)
-                    node_outputs[node_id] = r.text
+                    try:
+                        json_data = r.json()
+                        # If it's a joke API format
+                        if 'setup' in json_data and 'punchline' in json_data:
+                            node_outputs[node_id] = f"{json_data['setup']} ... {json_data['punchline']}"
+                        else:
+                            node_outputs[node_id] = json.dumps(json_data, indent=2)
+                    except:
+                        node_outputs[node_id] = r.text
                 else:
                     node_outputs[node_id] = 'No URL provided'
             except Exception as e:
