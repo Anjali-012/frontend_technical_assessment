@@ -100,7 +100,6 @@ def execute_pipeline(nodes, edges):
                     inputs.append(node_outputs[src_id])
         
         input_text = ' '.join(inputs) if inputs else ''
-        print(f"Node: {node_type}, Input: {input_text}, Data: {data}")
         
         if node_type == 'customInput':
             node_outputs[node_id] = data.get('inputName', 'input')
@@ -157,7 +156,17 @@ def execute_pipeline(nodes, edges):
             node_outputs[node_id] = f"Timer: {data.get('interval', 5)} {data.get('unit', 'seconds')}"
             
         elif node_type == 'api':
-            node_outputs[node_id] = f"API Call to: {data.get('url', 'N/A')} [{data.get('method', 'GET')}]"
+            import httpx
+            try:
+                url = data.get('url', '')
+                method = data.get('method', 'GET')
+                if url:
+                    r = httpx.request(method, url, timeout=10)
+                    node_outputs[node_id] = r.text
+                else:
+                    node_outputs[node_id] = 'No URL provided'
+            except Exception as e:
+                node_outputs[node_id] = f"API Error: {str(e)}"
         
         else:
             node_outputs[node_id] = input_text
