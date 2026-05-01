@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import { Position } from "reactflow";
 import { BaseNode } from "./BaseNode";
+import { useStore } from "../store";
 
 export const TextNode = ({ id, data }) => {
-  const [currText, setCurrText] = useState(data?.text || "{{input}}");
+  const [currText, setCurrText] = useState(data?.text || "");
   const [variables, setVariables] = useState([]);
   const [nodeSize, setNodeSize] = useState({ width: 220, height: 80 });
+  const updateNodeField = useStore((state) => state.updateNodeField);
 
   useEffect(() => {
-    // Extract {{variable}} patterns
     const regex = /\{\{([a-zA-Z_$][a-zA-Z0-9_$]*)\}\}/g;
     const matches = [];
     let match;
@@ -19,12 +20,14 @@ export const TextNode = ({ id, data }) => {
     }
     setVariables(matches);
 
-    // Auto resize based on text length
     const lines = currText.split("\n").length;
     const width = Math.max(220, Math.min(500, currText.length * 8 + 60));
     const height = Math.max(80, lines * 24 + 60);
     setNodeSize({ width, height });
-  }, [currText]);
+
+    // Save to store
+    updateNodeField(id, "text", currText);
+  }, [currText, id, updateNodeField]);
 
   const dynamicHandles = variables.map((v, i) => ({
     type: "target",
@@ -57,7 +60,6 @@ export const TextNode = ({ id, data }) => {
           },
         ]}
       />
-      {/* Variable labels */}
       {variables.map((v, i) => (
         <div
           key={v}

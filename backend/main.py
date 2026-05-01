@@ -100,6 +100,7 @@ def execute_pipeline(nodes, edges):
                     inputs.append(node_outputs[src_id])
         
         input_text = ' '.join(inputs) if inputs else ''
+        print(f"Node: {node_type}, Input: {input_text}, Data: {data}")
         
         if node_type == 'customInput':
             node_outputs[node_id] = data.get('inputName', 'input')
@@ -118,7 +119,6 @@ def execute_pipeline(nodes, edges):
                 response = client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[
-                        {"role": "system", "content": "You are a helpful assistant."},
                         {"role": "user", "content": prompt}
                     ],
                     max_tokens=500
