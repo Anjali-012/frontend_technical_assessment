@@ -1,8 +1,10 @@
 # node modules
 node_modules/
 
-# environment variables
+# Environment variables
 .env
+backend/.env
+*.env
 
 # logs
 npm-debug.log*
