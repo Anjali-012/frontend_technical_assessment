@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import ReactFlow, { Controls, Background, MiniMap } from "reactflow";
 import { useStore } from "./store";
 import { shallow } from "zustand/shallow";
@@ -51,9 +51,52 @@ export const PipelineUI = () => {
     onConnect,
   } = useStore(selector, shallow);
 
+  // Keyboard delete
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Only delete if not typing in an input
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")
+        return;
+      if (e.key === "Delete" || e.key === "Backspace") {
+        const selectedNodes = nodes.filter((n) => n.selected);
+        const selectedEdges = edges.filter((ed) => ed.selected);
+        if (selectedNodes.length > 0) {
+          onNodesChange(
+            selectedNodes.map((n) => ({ type: "remove", id: n.id })),
+          );
+        }
+        if (selectedEdges.length > 0) {
+          onEdgesChange(
+            selectedEdges.map((ed) => ({ type: "remove", id: ed.id })),
+          );
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [nodes, edges, onNodesChange, onEdgesChange]);
+
+  // Node validation - memoized to prevent unnecessary re-renders
+  const validatedNodes = useMemo(() => {
+    const connectedIds = new Set([
+      ...edges.map((e) => e.source),
+      ...edges.map((e) => e.target),
+    ]);
+    return nodes.map((node) => {
+      const isAlone = nodes.length > 1 && !connectedIds.has(node.id);
+      return {
+        ...node,
+        style: {
+          ...node.style,
+          outline: isAlone ? "2px solid #ef4444" : "none",
+          borderRadius: "12px",
+        },
+      };
+    });
+  }, [nodes, edges]);
+
   const getInitNodeData = (nodeID, type) => {
-    let nodeData = { id: nodeID, nodeType: `${type}` };
-    return nodeData;
+    return { id: nodeID, nodeType: `${type}` };
   };
 
   const onDrop = useCallback(
@@ -68,10 +111,14 @@ export const PipelineUI = () => {
         if (typeof type === "undefined" || !type) {
           return;
         }
+
+        if (!reactFlowInstance) return;
+
         const position = reactFlowInstance.project({
           x: event.clientX - reactFlowBounds.left,
           y: event.clientY - reactFlowBounds.top,
         });
+
         const nodeID = getNodeID(type);
         const newNode = {
           id: nodeID,
@@ -96,7 +143,7 @@ export const PipelineUI = () => {
       style={{ width: "100vw", height: "70vh", background: "#0f172a" }}
     >
       <ReactFlow
-        nodes={nodes}
+        nodes={validatedNodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}

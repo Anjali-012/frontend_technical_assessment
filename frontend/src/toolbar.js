@@ -1,4 +1,5 @@
 import { DraggableNode } from "./draggableNode";
+import { SaveLoad } from "./components/SaveLoad";
 
 export const PipelineToolbar = () => {
   return (
@@ -10,19 +11,31 @@ export const PipelineToolbar = () => {
         boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
       }}
     >
+      {/* Top row - title + save/load */}
       <div
         style={{
-          fontSize: "11px",
-          color: "#64748b",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
           marginBottom: "10px",
-          fontWeight: "600",
-          letterSpacing: "1px",
-          textTransform: "uppercase",
-          fontFamily: "Inter, sans-serif",
         }}
       >
-        Pipeline Nodes
+        <div
+          style={{
+            fontSize: "11px",
+            color: "#64748b",
+            fontWeight: "600",
+            letterSpacing: "1px",
+            textTransform: "uppercase",
+            fontFamily: "Inter, sans-serif",
+          }}
+        >
+          Pipeline Nodes
+        </div>
+        <SaveLoad />
       </div>
+
+      {/* Node buttons */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
         <DraggableNode type="customInput" label="Input" />
         <DraggableNode type="llm" label="LLM" />

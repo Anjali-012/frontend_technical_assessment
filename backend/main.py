@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
-from openai import OpenAI
+from groq import Groq
 from dotenv import load_dotenv
 import os
 
@@ -18,7 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 class Pipeline(BaseModel):
     nodes: List[Dict[str, Any]]
@@ -116,7 +116,7 @@ def execute_pipeline(nodes, edges):
             prompt = input_text or 'Hello!'
             try:
                 response = client.chat.completions.create(
-                    model="gpt-4",
+                    model="llama-3.3-70b-versatile",
                     messages=[
                         {"role": "system", "content": "You are a helpful assistant."},
                         {"role": "user", "content": prompt}
