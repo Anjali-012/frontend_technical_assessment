@@ -41,6 +41,7 @@ const selector = (state) => ({
 export const PipelineUI = () => {
   const reactFlowWrapper = useRef(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null);
   const {
     nodes,
     edges,
@@ -54,7 +55,6 @@ export const PipelineUI = () => {
   // Keyboard delete
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Only delete if not typing in an input
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")
         return;
       if (e.key === "Delete" || e.key === "Backspace") {
@@ -76,7 +76,7 @@ export const PipelineUI = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [nodes, edges, onNodesChange, onEdgesChange]);
 
-  // Node validation - memoized to prevent unnecessary re-renders
+  // Node validation
   const validatedNodes = useMemo(() => {
     const connectedIds = new Set([
       ...edges.map((e) => e.source),
@@ -95,6 +95,38 @@ export const PipelineUI = () => {
     });
   }, [nodes, edges]);
 
+  // Context menu handlers
+  const onNodeContextMenu = useCallback((event, node) => {
+    event.preventDefault();
+    setContextMenu({
+      type: "node",
+      id: node.id,
+      x: event.clientX,
+      y: event.clientY,
+    });
+  }, []);
+
+  const onEdgeContextMenu = useCallback((event, edge) => {
+    event.preventDefault();
+    setContextMenu({
+      type: "edge",
+      id: edge.id,
+      x: event.clientX,
+      y: event.clientY,
+    });
+  }, []);
+
+  const closeContextMenu = () => setContextMenu(null);
+
+  const handleDelete = () => {
+    if (contextMenu?.type === "node") {
+      onNodesChange([{ type: "remove", id: contextMenu.id }]);
+    } else if (contextMenu?.type === "edge") {
+      onEdgesChange([{ type: "remove", id: contextMenu.id }]);
+    }
+    setContextMenu(null);
+  };
+
   const getInitNodeData = (nodeID, type) => {
     return { id: nodeID, nodeType: `${type}` };
   };
@@ -108,9 +140,7 @@ export const PipelineUI = () => {
           event.dataTransfer.getData("application/reactflow"),
         );
         const type = appData?.nodeType;
-        if (typeof type === "undefined" || !type) {
-          return;
-        }
+        if (typeof type === "undefined" || !type) return;
 
         if (!reactFlowInstance) return;
 
@@ -155,6 +185,9 @@ export const PipelineUI = () => {
         proOptions={proOptions}
         snapGrid={[gridSize, gridSize]}
         connectionLineType="smoothstep"
+        onNodeContextMenu={onNodeContextMenu}
+        onEdgeContextMenu={onEdgeContextMenu}
+        onClick={closeContextMenu}
       >
         <Background color="#1e3a5f" gap={gridSize} />
         <Controls
@@ -162,6 +195,45 @@ export const PipelineUI = () => {
         />
         <MiniMap style={{ background: "#1e2a3a" }} nodeColor="#3b82f6" />
       </ReactFlow>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          style={{
+            position: "fixed",
+            top: contextMenu.y,
+            left: contextMenu.x,
+            background: "#1e2a3a",
+            border: "1px solid #3a4a5c",
+            borderRadius: "8px",
+            padding: "4px",
+            zIndex: 1000,
+            boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+            fontFamily: "Inter, sans-serif",
+            minWidth: "150px",
+          }}
+        >
+          <div
+            onClick={handleDelete}
+            style={{
+              padding: "8px 12px",
+              color: "#ef4444",
+              cursor: "pointer",
+              borderRadius: "6px",
+              fontSize: "13px",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#2d3748")}
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "transparent")
+            }
+          >
+            🗑️ Delete {contextMenu.type === "node" ? "Node" : "Connection"}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
