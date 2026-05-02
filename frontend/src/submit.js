@@ -1,11 +1,10 @@
 import { ResultModal } from "./components/ResultModal";
-import { usePipelineExecution } from "./hooks/usePipelineExecution";
 import { useState } from "react";
 
-export const SubmitButton = () => {
+export const SubmitButton = ({ executionState }) => {
   const [runPipeline, setRunPipeline] = useState(false);
   const { isRunning, result, modalOpen, setModalOpen, analyzePipeline } =
-    usePipelineExecution();
+    executionState;
 
   return (
     <>

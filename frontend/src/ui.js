@@ -11,7 +11,6 @@ import { MathNode } from "./nodes/mathNode";
 import { ApiNode } from "./nodes/apiNode";
 import { MergeNode } from "./nodes/mergeNode";
 import { TimerNode } from "./nodes/timerNode";
-import { usePipelineExecution } from "./hooks/usePipelineExecution";
 
 import "reactflow/dist/style.css";
 
@@ -39,11 +38,10 @@ const selector = (state) => ({
   onConnect: state.onConnect,
 });
 
-export const PipelineUI = () => {
+export const PipelineUI = ({ nodeStatuses = {} }) => {
   const reactFlowWrapper = useRef(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
-  const { nodeStatuses } = usePipelineExecution();
   const {
     nodes,
     edges,

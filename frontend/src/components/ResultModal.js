@@ -187,6 +187,8 @@ export const ResultModal = ({ isOpen, onClose, data }) => {
                       color: "#e2e8f0",
                       lineHeight: "1.6",
                       whiteSpace: "pre-wrap",
+                      maxHeight: "200px",
+                      overflowY: "auto",
                     }}
                   >
                     {value || "No output"}
