@@ -11,6 +11,7 @@ import { MathNode } from "./nodes/mathNode";
 import { ApiNode } from "./nodes/apiNode";
 import { MergeNode } from "./nodes/mergeNode";
 import { TimerNode } from "./nodes/timerNode";
+import { usePipelineExecution } from "./hooks/usePipelineExecution";
 
 import "reactflow/dist/style.css";
 
@@ -42,6 +43,7 @@ export const PipelineUI = () => {
   const reactFlowWrapper = useRef(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
+  const { nodeStatuses } = usePipelineExecution();
   const {
     nodes,
     edges,
@@ -52,7 +54,6 @@ export const PipelineUI = () => {
     onConnect,
   } = useStore(selector, shallow);
 
-  // Keyboard delete
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")
@@ -76,7 +77,6 @@ export const PipelineUI = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [nodes, edges, onNodesChange, onEdgesChange]);
 
-  // Node validation
   const validatedNodes = useMemo(() => {
     const connectedIds = new Set([
       ...edges.map((e) => e.source),
@@ -84,18 +84,37 @@ export const PipelineUI = () => {
     ]);
     return nodes.map((node) => {
       const isAlone = nodes.length > 1 && !connectedIds.has(node.id);
+      const status = nodeStatuses[node.id];
+
+      let outline = "none";
+      let boxShadow = "none";
+
+      if (status === "running") {
+        outline = "2px solid #3b82f6";
+        boxShadow = "0 0 15px rgba(59,130,246,0.6)";
+      } else if (status === "success") {
+        outline = "2px solid #22c55e";
+        boxShadow = "0 0 15px rgba(34,197,94,0.6)";
+      } else if (status === "error") {
+        outline = "2px solid #ef4444";
+        boxShadow = "0 0 15px rgba(239,68,68,0.6)";
+      } else if (isAlone) {
+        outline = "2px solid #ef4444";
+      }
+
       return {
         ...node,
         style: {
           ...node.style,
-          outline: isAlone ? "2px solid #ef4444" : "none",
+          outline,
+          boxShadow,
           borderRadius: "12px",
+          transition: "all 0.3s ease",
         },
       };
     });
-  }, [nodes, edges]);
+  }, [nodes, edges, nodeStatuses]);
 
-  // Context menu handlers
   const onNodeContextMenu = useCallback((event, node) => {
     event.preventDefault();
     setContextMenu({
@@ -127,9 +146,10 @@ export const PipelineUI = () => {
     setContextMenu(null);
   };
 
-  const getInitNodeData = (nodeID, type) => {
-    return { id: nodeID, nodeType: `${type}` };
-  };
+  const getInitNodeData = (nodeID, type) => ({
+    id: nodeID,
+    nodeType: `${type}`,
+  });
 
   const onDrop = useCallback(
     (event) => {
@@ -141,14 +161,11 @@ export const PipelineUI = () => {
         );
         const type = appData?.nodeType;
         if (typeof type === "undefined" || !type) return;
-
         if (!reactFlowInstance) return;
-
         const position = reactFlowInstance.project({
           x: event.clientX - reactFlowBounds.left,
           y: event.clientY - reactFlowBounds.top,
         });
-
         const nodeID = getNodeID(type);
         const newNode = {
           id: nodeID,
@@ -196,7 +213,6 @@ export const PipelineUI = () => {
         <MiniMap style={{ background: "#1e2a3a" }} nodeColor="#3b82f6" />
       </ReactFlow>
 
-      {/* Context Menu */}
       {contextMenu && (
         <div
           style={{

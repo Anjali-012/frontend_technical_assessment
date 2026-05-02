@@ -1,49 +1,18 @@
-import { useState } from "react";
-import { useStore } from "./store";
-import { shallow } from "zustand/shallow";
 import { ResultModal } from "./components/ResultModal";
-
-const selector = (state) => ({
-  nodes: state.nodes,
-  edges: state.edges,
-});
+import { usePipelineExecution } from "./hooks/usePipelineExecution";
+import { useState } from "react";
 
 export const SubmitButton = () => {
-  const { nodes, edges } = useStore(selector, shallow);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalData, setModalData] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [runPipeline, setRunPipeline] = useState(false);
-
-  const handleSubmit = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch("http://localhost:8000/pipelines/parse", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ nodes, edges, run: runPipeline }),
-      });
-
-      const data = await response.json();
-      setModalData(data);
-      setModalOpen(true);
-    } catch (error) {
-      alert(
-        "❌ Error connecting to backend. Make sure it is running on port 8000.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { isRunning, result, modalOpen, setModalOpen, analyzePipeline } =
+    usePipelineExecution();
 
   return (
     <>
       <ResultModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        data={modalData}
+        data={result}
       />
       <div
         style={{
@@ -56,7 +25,6 @@ export const SubmitButton = () => {
           borderTop: "1px solid #2d3748",
         }}
       >
-        {/* Toggle Run Pipeline */}
         <label
           style={{
             display: "flex",
@@ -73,14 +41,14 @@ export const SubmitButton = () => {
             onChange={(e) => setRunPipeline(e.target.checked)}
             style={{ cursor: "pointer" }}
           />
-          Run Pipeline (uses OpenAI)
+          Run Pipeline (uses Groq AI)
         </label>
 
         <button
-          onClick={handleSubmit}
-          disabled={loading}
+          onClick={() => analyzePipeline(runPipeline)}
+          disabled={isRunning}
           style={{
-            background: loading
+            background: isRunning
               ? "#334155"
               : "linear-gradient(90deg, #3b82f6 0%, #6366f1 100%)",
             color: "#fff",
@@ -89,13 +57,13 @@ export const SubmitButton = () => {
             padding: "10px 32px",
             fontSize: "14px",
             fontWeight: "600",
-            cursor: loading ? "not-allowed" : "pointer",
-            boxShadow: loading ? "none" : "0 4px 15px rgba(59,130,246,0.4)",
+            cursor: isRunning ? "not-allowed" : "pointer",
+            boxShadow: isRunning ? "none" : "0 4px 15px rgba(59,130,246,0.4)",
             letterSpacing: "0.5px",
             transition: "all 0.2s",
           }}
         >
-          {loading ? "⏳ Analyzing..." : "🚀 Submit Pipeline"}
+          {isRunning ? "⏳ Executing..." : "🚀 Submit Pipeline"}
         </button>
       </div>
     </>
